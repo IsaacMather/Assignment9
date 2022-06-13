@@ -217,8 +217,8 @@ class WebStore:
             # should be easy to determine by examining the KeywordEntry object.
             # Notice we use the recriprocal. Higher frequency is better, but we are
             # using a MinHeap, so we want small numbers to be better.
-            frequency_keyword_one = len(term_one_keyword_entry)
-            frequency_keyword_two = len(term_two_keyword_entry)
+            frequency_keyword_one = len(term_one_location_list)
+            frequency_keyword_two = len(term_two_location_list)
 
             combined_frequency = (1/frequency_keyword_one) * (1/frequency_keyword_two)
 
