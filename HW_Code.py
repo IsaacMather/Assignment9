@@ -1,150 +1,27 @@
-from MinHeap import MinHeap
-from bs4 import BeautifulSoup
-import requests
-import re
-from bs4.element import Comment
-from urllib.parse import urljoin
-from ResultEntry import ResultEntry
-import sys
-
-def _link_fisher(url: str, depth=0, reg_ex=""):
-    link_list = []
-    headers = {'User-Agent': ''}
-
-    if depth == 0:
-        link_list.append(url)
-        return link_list
-
-    try:
-        page = requests.get(url, headers=headers)
-    except:
-        print("Cannot access page")
-        return link_list
-
-    if page.status_code >= 400:
-        print("Page Error")
-
-    data = page.text
-    pattern = re.compile(reg_ex)
-
-    soup = BeautifulSoup(data, features="html.parser")
-    for link in soup.find_all('a'):
-        link = link.get("href")
-        if not pattern.match(link) or reg_ex == '':
-            link = urljoin(url, link)
-        link_list.append(link)
-        link_list += _link_fisher(link, depth - 1, reg_ex)
-
-    link_list.append(url)
-    # print(link_list)
-    return link_list
 
 
-def link_fisher(url: str, depth=0, reg_ex=""):
-        link_list = _link_fisher(url, depth, reg_ex)
-        link_list = list(set(link_list))
-        return link_list
 
-
-def tag_visible(element):
-    if element.parent.name in ['style', 'script', 'head', 'title', 'meta', '[document]']:
-        return False
-    if isinstance(element, Comment):
-        return False
-    return True
-
-
-def words_from_html(body):
-    soup = BeautifulSoup(body, 'html.parser')
-    texts = soup.find_all(string=True)
-    visible_texts = filter(tag_visible, texts)
-    text_string = " ".join(t for t in visible_texts)
-    words = re.findall(r'\w+', text_string)
-    return words
-
-
-def text_harvester(url):
-    headers = {
-        'User-Agent': ''}
-    try:
-        page = requests.get(url, headers=headers)
-    except:
-        return []
-    res = words_from_html(page.content)
-
-    return res
-
-# print(text_harvester('http://foothill.edu'))
-
-
-class KeywordEntry:
-    """Stores information about a specific word on a webpage
-
-        Args:
-            word (str): the word we're storing info about
-            url (str): the url the word is located on
-            location (int): location, where the word is on the page
-    """
-
-    def __init__(self, word: str, url: str = None, location: int = None):
-        self._word = word.upper()
-        if url:
-            self._sites = {url: [location]}
-        else:
-            self._sites = {}
-
-    def add(self, url: str, location: int) -> None:
-        if url in self._sites:
-            self._sites[url].append(location)
-        else:
-            self._sites[url] = [location]
-
-    def get_locations(self, url: str) -> list:
-        try:
-            return self._sites[url]
-        except IndexError:
-            return []
+class ResultEntry:
+    def __init__(self, site, score):
+        self._site = site
+        self._score = score
 
     @property
-    def sites(self) -> list:
-        return [key for key in self._sites]
+    def site(self):
+        return self._site
+
+    @property
+    def score(self):
+        return self._score
 
     def __lt__(self, other):
-        if isinstance(other, str):
-            other = other.upper()
-            return self._word < other
-
-        elif isinstance(other, KeywordEntry):
-            return self._word < other._word
-
-        else:
-            print("Error, incorrect data type passed to __lt__")
+        return self._score < other._score
 
     def __gt__(self, other):
-        if isinstance(other, str):
-            other = other.upper()
-            return self._word > other
-
-        elif isinstance(other, KeywordEntry):
-            return self._word > other._word
-
-        else:
-            print("Error, incorrect data type passed to __gt__")
+        return self._score > other._score
 
     def __eq__(self, other):
-        if isinstance(other, str):
-            other = other.upper()
-            return self._word == other
-
-        elif isinstance(other, KeywordEntry):
-            return self._word == other._word
-
-        else:
-            print("Error, incorrect data type passed to __eq__")
-
-    def __hash__(self):
-        return hash(self._word)
-
+        return self._score == other._score
 
 class WebStore:
 
@@ -357,3 +234,74 @@ class WebStore:
                     continue
                 word_set.add(word)
         return list(word_set)
+
+
+#sample output
+# /Users/isaacmather/PycharmProjects/Assignment9/venv/bin/python /Users/isaacmather/PycharmProjects/Assignment9/main.py
+# Enter first term: persistent
+# Enter second term: defect
+#
+# Enter first term: placement
+# Enter second term: defect
+# http://compsci.mrreed.com 1.0145709240540254e+19
+#
+# Enter first term: spike
+# Enter second term: position
+# http://compsci.mrreed.com/8167.html 2.7670116110564327e+19
+#
+# Enter first term: waters
+# Enter second term: waters
+# http://compsci.mrreed.com/4820.html 9.223372036854776e+20
+# http://compsci.mrreed.com/2649.html 7.142579305340338e+22
+#
+# Enter first term: scissors
+# Enter second term: scissors
+# http://compsci.mrreed.com/2649.html 3.6893488147419103e+19
+# http://compsci.mrreed.com/7918.html 9.223372036854776e+20
+# http://compsci.mrreed.com/5738.html 3.6893488147419103e+21
+# http://compsci.mrreed.com/8167.html 4.4641120658377115e+21
+# http://compsci.mrreed.com/4542.html 6.353980996189255e+22
+#
+# Enter first term: floor
+# Enter second term: scissors
+# http://compsci.mrreed.com/2649.html 5.902958103587057e+20
+# http://compsci.mrreed.com/4542.html 1.7607417218355767e+22
+#
+# Enter first term:
+# Enter second term: blank
+#
+# Enter first term: 1
+# Enter second term: three
+#
+# Enter first term: [
+# Enter second term: ]
+#
+# Enter first term:
+# Enter second term:
+#
+# Enter first term: placement
+# Enter second term: placement
+# http://compsci.mrreed.com 9.223372036854778e+16
+# http://compsci.mrreed.com/49.html 9.223372036854778e+16
+#
+# Enter first term: knobs
+# Enter second term: placemenbt
+#
+# Enter first term: knobs
+# Enter second term: placement
+# http://compsci.mrreed.com 2.4903104499507896e+19
+#
+# Enter first term: scissors
+# Enter second term: floor
+# http://compsci.mrreed.com/2649.html 5.902958103587057e+20
+# http://compsci.mrreed.com/4542.html 1.7607417218355767e+22
+#
+# Enter first term: floor
+# Enter second term: scissors
+# http://compsci.mrreed.com/2649.html 5.902958103587057e+20
+# http://compsci.mrreed.com/4542.html 1.7607417218355767e+22
+#
+# Enter first term: isaac
+# Enter second term: mather
+#
+# Enter first term:
